@@ -1,29 +1,9 @@
+package com.koeltv
+
 import java.io.BufferedReader
 import java.io.File
 import java.io.InputStreamReader
 import java.util.*
-
-val blacklist = listOf(
-    "Microsoft",
-    "Windows",
-    "Xbox",
-    "Extensions",
-    "MSN Météo",
-    "Programme d'installation d'application",
-    "Services de jeu",
-    "Obtenir de l'aide",
-    "Local Experience Pack",
-    "Paquete de experiencia local",
-    "Module d'exp",
-    "Paint 3D",
-    "Visionneuse",
-    "Portail de réalité mixte",
-    "Print 3D",
-    "Capture d'écran et croquis",
-    "Hub de commentaires",
-    "Films et TV",
-    "Courrier et calendrier"
-)
 
 fun execute(vararg command: String?): BufferedReader {
     val processBuilder = ProcessBuilder(*command)
@@ -50,6 +30,14 @@ fun export(fileName: String) {
     )
 
     println("Exporting packages to temporary file...")
+
+    val blackListFile = File("./app/blacklist.txt")
+    val blacklist = if (blackListFile.exists()) {
+        blackListFile.readLines()
+    } else {
+        println("blacklist.txt not found, proceeding without blacklist")
+        listOf()
+    }
 
     val reader = execute("winget", "export", "-o", "\"${name}_temp${extension}\"")
     val tempAvailablePackages = reader.useLines { lineSequence ->
@@ -107,7 +95,14 @@ fun export(fileName: String) {
 
 fun import(fileName: String) {
     val reader =
-        execute("winget", "import", "-i", "\"$fileName\"", "--accept-package-agreements", "--accept-source-agreements")
+        execute(
+            "winget",
+            "import",
+            "-i",
+            "\"$fileName\"",
+            "--accept-package-agreements",
+            "--accept-source-agreements"
+        )
     reader.useLines { lineSequence ->
         lineSequence.forEach { line ->
             if (line.isNotBlank()) println(line)
@@ -116,31 +111,40 @@ fun import(fileName: String) {
 }
 
 fun main(args: Array<String>) {
-    try {
-        if (args.isNotEmpty()) {
-            if (args.size != 2)
-                throw Exception("Wrong format command, format is \"program -l/-s/--load/--save filePath\"")
-            when (args[0]) {
-                "-l", "--load" -> import(args[1])
-                "-s", "--save" -> export(args[1])
-            }
+    val scanner = Scanner(System.`in`)
+    val operation: String
+    val filePath: String
+
+    if (args.isNotEmpty()) {
+        if (args.size != 2) {
+            System.err.println("Wrong format command, format is \"./packageBackup.exe -l/-s/--load/--save filePath\"")
+            return
         } else {
-            val scanner = Scanner(System.`in`)
-            println("Welcome ! With this program you can save or load all the packages on your computer via a save file")
-            println("Do you want to load or save a file ? (S/L)")
-            print("> ")
-            val choice = scanner.nextLine()
-
-            println("Please enter the path of the file you want to save to/load")
-            print("> ")
-            val filePath = scanner.nextLine()
-
-            when (choice) {
-                "S" -> export(filePath)
-                "L" -> import(filePath)
-            }
+            operation = args[0]
+            filePath = args[1]
         }
-    } catch (exception: Exception) {
-        System.err.println(exception.message)
+    } else {
+        println("Welcome ! With this program you can save or load all the packages on your computer via a save file")
+        println("Do you want to save or load a file ? (S/L)")
+        print("> ")
+        operation = scanner.nextLine()
+
+        println("Please enter the path of the file you want to save to/load")
+        print("> ")
+        filePath = scanner.nextLine()
     }
+
+    if (operation.isBlank())
+        System.err.println("Operation incorrect")
+    else if (filePath.isBlank())
+        System.err.println("Please input a valid file path")
+    else {
+        when (operation) {
+            "-l", "--load", "L" -> import(filePath)
+            "-s", "--save", "S" -> export(filePath)
+        }
+    }
+
+    print("\nPress enter to exit")
+    scanner.nextLine()
 }
