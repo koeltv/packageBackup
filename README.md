@@ -32,4 +32,6 @@ To load your packages from a file:
 ./packageBackup.exe --load inputFileName
 ```
 
+To uninstall the app, simply go to Windows Settings,  Applications, then select packageBackup and click on uninstall
+
 Icon from [Smashicons - Flaticon](https://www.flaticon.com/free-icons/backup)
